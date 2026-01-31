@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 Keygen-UI is a comprehensive frontend interface for Keygen API licensing management. Built with Next.js 15, React 19, TypeScript, and Tailwind CSS v4, it provides complete CRUD operations for licenses, machines, products, policies, and users.
 
-**Status**: Phase 2 Complete - Pagination, Stats & API Fixes ✅
+**Status**: Phase 3 Complete - Dashboard Charts, Settings, Enhanced Details & Relationships ✅
 **API Integration**: Connected to Keygen instance at `https://lms.pvx.ai/v1`
 **Authentication**: Fully implemented with protected routes
 
@@ -47,7 +47,8 @@ npx shadcn@latest add <component-name>
 - **API Client**: Custom TypeScript client with full type safety
 - **Authentication**: React Context + localStorage with protected routes
 - **State Management**: React Context + SWR for data fetching
-- **Icons**: Lucide React
+- **Charts**: Recharts via shadcn ChartContainer/ChartTooltip
+- **Icons**: Lucide React + Tabler Icons (sidebar)
 - **Notifications**: Sonner toast notifications
 
 ### Key Configuration
@@ -70,13 +71,16 @@ src/
 │   │   ├── groups/         # Group management
 │   │   ├── entitlements/   # Entitlement management
 │   │   ├── webhooks/       # Webhook management
+│   │   ├── settings/       # User settings page
 │   │   └── layout.tsx      # Dashboard layout with sidebar
 │   ├── login/              # Authentication pages
 │   ├── globals.css
 │   ├── layout.tsx
 │   └── page.tsx
 ├── hooks/                  # Custom React hooks
-│   └── use-pagination.ts   # Shared pagination state hook
+│   ├── use-pagination.ts   # Shared pagination state hook
+│   ├── use-debounce.ts     # Debounced value hook (search inputs)
+│   └── use-sorting.ts      # Client-side column sorting hook
 ├── lib/                    # Utility functions and shared code
 │   ├── api/                # Keygen API client
 │   │   ├── client.ts       # Main API client (array params, page[size]/page[number] pagination)
@@ -84,10 +88,14 @@ src/
 │   │   └── resources/      # Resource-specific API methods
 │   ├── auth/               # Authentication context and utilities
 │   ├── types/              # TypeScript type definitions
-│   └── utils.ts            # Utility functions
+│   ├── utils.ts            # Utility functions
+│   └── utils/              # Utility modules
+│       └── clipboard.ts    # Copy-to-clipboard helper
 └── components/             # React components
     ├── ui/                 # shadcn/ui components
-    ├── shared/             # Shared components (pagination-controls, confirm-dialog)
+    ├── shared/             # Shared components (pagination, metadata, sorting)
+    ├── dashboard/          # Dashboard-specific components (metrics charts, stats)
+    ├── settings/           # Settings page components
     ├── auth/               # Authentication components
     ├── licenses/           # License management components
     ├── machines/           # Machine management components
@@ -176,7 +184,7 @@ const ALL_USER_ROLES: User['attributes']['role'][] = [
 const response = await api.users.list({ ...pagination.paginationParams, roles: ALL_USER_ROLES })
 ```
 
-This is used in both `user-management.tsx` and `section-cards.tsx` (dashboard stats).
+This is used in both `user-management.tsx` and dashboard stats components.
 
 ### Component Structure
 
@@ -211,39 +219,51 @@ KEYGEN_ADMIN_PASSWORD=[configured]
 
 ### ✅ Complete Features
 - **Authentication System** (`/login`) - Full login/logout with protected routes
-- **Dashboard** (`/dashboard`) - Real-time analytics with Keygen API data
-- **License Management** (`/dashboard/licenses`) - Complete CRUD with professional dialogs, token generation
-- **Machine Management** (`/dashboard/machines`) - Monitor and manage devices
-- **Product Management** (`/dashboard/products`) - Product lifecycle management
-- **Policy Management** (`/dashboard/policies`) - Complete policy management with smart API-compliant creation
-- **Group Management** (`/dashboard/groups`) - **NEW** Complete group CRUD, user/license assignment
-- **Entitlement Management** (`/dashboard/entitlements`) - **NEW** Feature toggle management and license association
-- **Webhook Management** (`/dashboard/webhooks`) - **NEW** Real-time event notification configuration
-- **User Management** (`/dashboard/users`) - User administration with roles
+- **Dashboard** (`/dashboard`) - Real-time analytics with stat cards, historical metrics charts (Licenses, Validations, Machines, Users tabs), license status breakdown, and recent items
+- **Settings** (`/settings`) - User profile editing, password change, account info display, public keys (Ed25519/RSA) with copy buttons
+- **License Management** (`/dashboard/licenses`) - Complete CRUD, suspend/reinstate, permissions display, policy/group/owner relationship management, user and entitlement attach/detach
+- **Machine Management** (`/dashboard/machines`) - Full hardware details (hostname, IP, platform, CPU cores, memory, disk), owner/group relationship management, heartbeat monitoring
+- **Product Management** (`/dashboard/products`) - Product lifecycle management with permissions (tag-style add/remove UI in create/edit)
+- **Policy Management** (`/dashboard/policies`) - Comprehensive policy creation with collapsible advanced sections (scheme, 7 limit fields, 12 flag checkboxes, 12 strategy selects, heartbeat settings, metadata), entitlement attach/detach in details view
+- **Group Management** (`/dashboard/groups`) - Complete group CRUD, user/license assignment, metadata editing
+- **Entitlement Management** (`/dashboard/entitlements`) - Feature toggle management and license association
+- **Webhook Management** (`/dashboard/webhooks`) - Real-time event notification configuration
+- **User Management** (`/dashboard/users`) - User administration with roles, profile editing
+
+### Shared Components
+- **MetadataEditor** (`shared/metadata-editor.tsx`) - Key-value metadata editor with stable internal state and add/remove support
+- **MetadataViewer** (`shared/metadata-viewer.tsx`) - Read-only metadata display
+- **MetadataIndicator** (`shared/metadata-indicator.tsx`) - Table cell indicator for metadata presence
+- **PaginationControls** (`shared/pagination-controls.tsx`) - Page size selector, navigation, item counts
+- **SortableTableHead** (`shared/sortable-table-head.tsx`) - Client-side column sorting headers
 
 ### Available API Resources
-- `api.licenses` - License management operations
-- `api.machines` - Machine monitoring operations  
-- `api.products` - Product management operations
-- `api.policies` - Policy management operations
-- `api.groups` - **NEW** Group management operations
-- `api.entitlements` - **NEW** Entitlement management operations
-- `api.webhooks` - **NEW** Webhook management and event notifications
-- `api.requestLogs` - **NEW** Request log analytics operations
-- `api.users` - User administration operations
+- `api.licenses` - License management (CRUD, suspend, reinstate, attach/detach users & entitlements)
+- `api.machines` - Machine management (CRUD, heartbeat, owner/group relationships)
+- `api.products` - Product management (CRUD with permissions)
+- `api.policies` - Policy management (CRUD with all strategy/limit/flag fields, entitlement attach/detach)
+- `api.groups` - Group management (CRUD with metadata, user/license relationships)
+- `api.entitlements` - Entitlement management
+- `api.webhooks` - Webhook management and event notifications
+- `api.metrics` - Historical metrics (`countByName()` for charting)
+- `api.eventLogs` - Event log queries
+- `api.requestLogs` - Request log analytics
+- `api.users` - User administration (CRUD, password change, role management)
 
 ## Important Notes
 
-- **Production Ready**: Phase 2 complete with pagination, accurate stats, and full API parameter support
-- **Real API Integration**: Connected to live Keygen instance
+- **Production Ready**: Phase 3 complete with dashboard charts, settings, enhanced detail views, and relationship management
+- **Real API Integration**: Connected to live Keygen instance (CE edition compatible)
 - **Type Safety**: Complete TypeScript coverage with strict mode
 - **Pagination**: All listing pages use server-side pagination via `page[size]`/`page[number]`
+- **Search + Pagination**: All search inputs reset pagination to page 1 via `resetToFirstPage()` in useEffect dependency arrays
 - **Stats Accuracy**: Stats cards use dedicated API calls with `limit: 1` to get `meta.count`, not array length
 - **Array Parameters**: API client supports `key[]=value` format for array query parameters (e.g., `roles[]`)
 - **Performance**: Optimized with Turbopack bundling
 - **Responsive Design**: Mobile-first approach with Tailwind CSS v4
 - **Error Handling**: Comprehensive error management with `handleLoadError` and `handleCrudError` utilities
-- **Enhanced Features**: Groups, Entitlements, Webhooks, Request Logs, and shared pagination infrastructure
+- **Relationship Management**: Inline select + save pattern for changing relationships (no modal-in-modal)
+- **Lazy Loading**: Dashboard chart tabs and detail dialog dropdowns load data on demand, not on mount
 
 ## 🤖 Agentic Development Patterns & Troubleshooting
 
@@ -252,18 +272,16 @@ KEYGEN_ADMIN_PASSWORD=[configured]
 #### 1. **Keygen API Parameter Constraints**
 **Issue**: Policy creation failed with "unpermitted parameter" errors
 **Root Cause**: Sending advanced strategy parameters during creation
-**Solution**: Use minimal approach - only send `name`, `duration` (optional), and product relationship
-**Pattern**: Always start with minimal required fields, then add optional ones incrementally
+**Solution**: Only send fields with actual user-set values — skip empty strings, false booleans, and undefined values
+**Pattern**: Build attributes object conditionally, only including non-default values
 
 ```typescript
-// ✅ CORRECT - Minimal policy creation
-const policyData = {
-  name: formData.name.trim()
-}
-// Add duration only if specified
-if (formData.duration) {
-  policyData.duration = parseInt(formData.duration)
-}
+// ✅ CORRECT - Only send non-default values
+const attributes: Record<string, unknown> = { name: formData.name.trim() }
+if (formData.duration) attributes.duration = parseInt(formData.duration)
+if (formData.scheme) attributes.scheme = formData.scheme
+if (formData.maxMachines) attributes.maxMachines = parseInt(formData.maxMachines)
+// ... only include fields the user explicitly set
 ```
 
 #### 2. **Professional Dialog Patterns**
@@ -313,6 +331,37 @@ try {
   }
 }
 ```
+
+#### 5. **Search Must Reset Pagination**
+**Issue**: Searching while on page 2+ showed stale results from previous page
+**Root Cause**: `searchTerm` was missing from the `resetToFirstPage()` useEffect dependency array
+**Solution**: Always include search-related state in the pagination reset dependencies
+
+```typescript
+// ✅ CORRECT - Reset pagination when search or filters change
+useEffect(() => {
+  pagination.resetToFirstPage()
+// eslint-disable-next-line react-hooks/exhaustive-deps
+}, [statusFilter, typeFilter, searchTerm])
+```
+
+#### 6. **Relationship Management Pattern**
+**Best Practice**: Use inline Select + Save/Cancel for changing relationships (policy, group, owner) instead of nested modals
+- Load dropdown options on-demand (when user clicks "Change"), not on dialog open
+- Each action gets its own loading state with `Loader2` spinner
+- After mutation, call `loadRelationships()` to refresh all data
+- Call `onResourceUpdated()` to refresh parent list
+
+#### 7. **Collapsible Form Sections**
+**Pattern**: For complex create/edit forms (e.g., policies with 40+ fields), use collapsible sections
+- Basic fields always visible at top
+- Advanced sections collapsed by default with `ChevronDown`/`ChevronRight` toggle
+- `max-h-[90vh] overflow-y-auto` on DialogContent for scrollability
+
+#### 8. **MetadataEditor Internal State**
+**Issue**: Adding entries would cause them to disappear immediately
+**Root Cause**: `onChange` converted entries to object, filtering empty keys, causing React state loop
+**Solution**: Use internal `useState<MetadataEntry[]>` with stable numeric IDs. `handleAdd` only calls `setEntries` (not `onChange`), so empty-key entries persist in UI until filled in.
 
 ### Development Workflow Patterns
 

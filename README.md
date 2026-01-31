@@ -10,9 +10,9 @@
 [![Tailwind CSS](https://img.shields.io/badge/Tailwind-4-38B2AC?style=for-the-badge&logo=tailwind-css)](https://tailwindcss.com/)
 [![shadcn/ui](https://img.shields.io/badge/shadcn/ui-latest-black?style=for-the-badge)](https://ui.shadcn.com/)
 
-[![Enterprise Ready](https://img.shields.io/badge/Enterprise-Ready-success?style=for-the-badge)](https://github.com/orcunbaslak/keygen-ui)
+[![Enterprise Ready](https://img.shields.io/badge/Enterprise-Ready-success?style=for-the-badge)](https://github.com/rorph/keygen-ui)
 [![API Coverage](https://img.shields.io/badge/API_Coverage-90%25-brightgreen?style=for-the-badge)](https://keygen.sh)
-[![Production Ready](https://img.shields.io/badge/Production-Ready-success?style=for-the-badge)](https://github.com/orcunbaslak/keygen-ui)
+[![Production Ready](https://img.shields.io/badge/Production-Ready-success?style=for-the-badge)](https://github.com/rorph/keygen-ui)
 
 [Features](#-features) •
 [Demo](#-demo) •
@@ -48,32 +48,42 @@ Keygen UI is a comprehensive, enterprise-grade frontend application that provide
 - **User Profiles** - Integrated user management with logout functionality
 
 ### 📊 Dashboard & Analytics
-- **Real-time Overview** - Live statistics from your Keygen instance
-- **Interactive Charts** - Visual data representation with responsive design
-- **Quick Actions** - Easy access to common management tasks
+- **Real-time Overview** - Live statistics from your Keygen instance with 6 stat cards
+- **Historical Metrics Charts** - Tabbed area charts (Licenses, Validations, Machines, Users) with 14-day trend data via Keygen metrics API
+- **License Status Breakdown** - Visual status distribution with resource counts
+- **Recent Items** - Latest licenses and machines at a glance
+- **Quick Actions** - Create any resource from the header dropdown
 
 ### 🎫 License Management
 - **Complete CRUD Operations** - Create, read, update, delete licenses with professional dialogs
-- **Advanced Search & Filtering** - Find licenses by status, user, or policy
+- **Advanced Search & Filtering** - Find licenses by status, user, policy, product, or group
 - **License Actions** - Suspend, reinstate, renew licenses with one click
+- **Relationship Management** - Change policy, group, and owner via inline selects
+- **User & Entitlement Attach/Detach** - Manage licensed users and entitlements directly from the details dialog
+- **Permissions Display** - View license permissions as badges
 - **Edit License Properties** - Update name, expiry, usage limits, and metadata
 - **Activation Token Generation** - Generate secure tokens for license activation
 - **License Key Management** - Copy keys, view detailed usage statistics
 
 ### 💻 Machine Management
 - **Device Monitoring** - Real-time heartbeat status tracking
-- **Machine Details** - Hardware information and activation history
+- **Full Hardware Details** - Hostname, IP, platform, CPU cores, memory, disk
+- **Relationship Management** - Change owner and group via inline selects
 - **Fingerprint Management** - Unique device identification
 - **Status Controls** - Activate, deactivate, and manage machine states
+- **Metadata Editing** - Custom key-value metadata with add/remove UI
 
 ### 📦 Product Management
 - **Product Catalog** - Comprehensive product lifecycle management
 - **Distribution Strategies** - Licensed, Open, and Closed distribution models
+- **Permissions Management** - Tag-style add/remove UI for product permissions
 - **Platform Support** - Multi-platform configuration and management
 - **Metadata Management** - Custom product information and settings
 
 ### 🛡️ Policy Management
-- **Smart Policy Creation** - API-compliant minimal parameter approach
+- **Comprehensive Policy Creation** - Collapsible advanced sections for scheme, limits (7 fields), flags (12 checkboxes), strategies (12 selects), heartbeat settings, and metadata
+- **Full Strategy Support** - Machine uniqueness, matching, expiration, renewal, transfer, authentication, leasing, and overage strategies
+- **Entitlement Management** - Attach/detach entitlements directly from policy details
 - **Policy Templates** - Floating, strict, protected, and timed policies
 - **Search & Filter** - Find policies by type and configuration
 - **Professional Dialogs** - Beautiful delete confirmations with proper warnings
@@ -81,6 +91,7 @@ Keygen UI is a comprehensive, enterprise-grade frontend application that provide
 ### 👥 Group Management
 - **Organization Structure** - Create and manage user/license groups
 - **Resource Limits** - Set maximum licenses, machines, and users per group
+- **Metadata Support** - Full metadata editing in create and edit dialogs
 - **Group Relationships** - Assign users and licenses to groups
 - **Group Analytics** - View group usage and member details
 
@@ -103,6 +114,13 @@ Keygen UI is a comprehensive, enterprise-grade frontend application that provide
 - **Role-Based Access** - Admin, Developer, Sales Agent, Support roles
 - **User Moderation** - Ban/unban functionality with audit trails
 - **Profile Management** - User information and account settings
+
+### ⚙️ Settings
+- **Profile Editing** - Update first name, last name, and email
+- **Password Management** - Change password with current password verification
+- **Account Information** - View account ID, user ID, role, and status
+- **Public Keys** - Display Ed25519 and RSA public keys with copy buttons
+- **Verify Key** - View verification hash for key integrity
 
 ---
 
@@ -151,7 +169,7 @@ Keygen UI is a comprehensive, enterprise-grade frontend application that provide
 
 1. **Clone the repository**
    ```bash
-   git clone https://github.com/orcunbaslak/keygen-ui.git
+   git clone https://github.com/rorph/keygen-ui.git
    cd keygen-ui
    ```
 
@@ -200,7 +218,8 @@ You should now have a fully functional Keygen UI running locally.
 | **Styling** | Tailwind CSS | 4 | Utility-first CSS framework |
 | **Components** | shadcn/ui | Latest | Beautiful, accessible components |
 | **Bundler** | Turbopack | Latest | Fast development builds |
-| **Icons** | Lucide React | Latest | Beautiful icon library |
+| **Charts** | Recharts | Latest | Area charts via shadcn ChartContainer |
+| **Icons** | Lucide React + Tabler | Latest | Beautiful icon libraries |
 | **Notifications** | Sonner | Latest | Toast notifications |
 
 </div>
@@ -472,8 +491,8 @@ This project is licensed under the **MIT License** - see the [LICENSE](LICENSE) 
 ## 📞 Support
 
 - **Documentation**: Check out our [documentation](#-documentation)
-- **Issues**: Report bugs on [GitHub Issues](https://github.com/orcunbaslak/keygen-ui/issues)
-- **Discussions**: Join conversations in [GitHub Discussions](https://github.com/orcunbaslak/keygen-ui/discussions)
+- **Issues**: Report bugs on [GitHub Issues](https://github.com/rorph/keygen-ui/issues)
+- **Discussions**: Join conversations in [GitHub Discussions](https://github.com/rorph/keygen-ui/discussions)
 
 ---
 
@@ -481,6 +500,6 @@ This project is licensed under the **MIT License** - see the [LICENSE](LICENSE) 
 
 **Built with ❤️ by Orçun Başlak**
 
-[⭐ Star this repository](https://github.com/orcunbaslak/keygen-ui) if you find it helpful!
+[⭐ Star this repository](https://github.com/rorph/keygen-ui) if you find it helpful!
 
 </div>
