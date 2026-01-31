@@ -11,7 +11,7 @@
 [![shadcn/ui](https://img.shields.io/badge/shadcn/ui-latest-black?style=for-the-badge)](https://ui.shadcn.com/)
 
 [![Enterprise Ready](https://img.shields.io/badge/Enterprise-Ready-success?style=for-the-badge)](https://github.com/rorph/keygen-ui)
-[![API Coverage](https://img.shields.io/badge/API_Coverage-90%25-brightgreen?style=for-the-badge)](https://keygen.sh)
+[![API Coverage](https://img.shields.io/badge/API_Coverage-95%25-brightgreen?style=for-the-badge)](https://keygen.sh)
 [![Production Ready](https://img.shields.io/badge/Production-Ready-success?style=for-the-badge)](https://github.com/rorph/keygen-ui)
 
 [Features](#-features) •
@@ -226,12 +226,6 @@ You should now have a fully functional Keygen UI running locally.
 
 ---
 
-## 📚 Docs
-
-- Start here: [AGENTS.md](./AGENTS.md) — index for all project docs and guidance for agents.
-
----
-
 ## 📖 Documentation
 
 ### API Integration
@@ -299,15 +293,16 @@ export function ExampleComponent() {
 ### Available Routes
 
 - `/login` - Authentication page
-- `/dashboard` - Main dashboard with analytics
-- `/dashboard/licenses` - License management
-- `/dashboard/machines` - Machine monitoring
-- `/dashboard/products` - Product management
-- `/dashboard/policies` - Policy management
-- `/dashboard/groups` - **NEW** Group management and organization
-- `/dashboard/entitlements` - **NEW** Feature entitlement management
-- `/dashboard/webhooks` - **NEW** Real-time webhook configuration
+- `/dashboard` - Main dashboard with metrics charts and analytics
+- `/dashboard/licenses` - License management with relationship editing
+- `/dashboard/machines` - Machine monitoring with hardware details
+- `/dashboard/products` - Product management with permissions
+- `/dashboard/policies` - Policy management with all advanced fields
+- `/dashboard/groups` - Group management with metadata
+- `/dashboard/entitlements` - Feature entitlement management
+- `/dashboard/webhooks` - Real-time webhook configuration
 - `/dashboard/users` - User administration
+- `/settings` - User profile, password, account info, public keys
 
 ---
 
@@ -376,61 +371,81 @@ pnpm add <package>     # Add new dependency
 src/
 ├── app/                 # Next.js App Router
 │   ├── (dashboard)/     # Dashboard routes
-│   │   ├── groups/     # Group management (NEW)
-│   │   ├── entitlements/ # Entitlement management (NEW)
-│   │   ├── webhooks/   # Webhook management (NEW)
-│   │   └── ...         # Other routes
+│   │   ├── dashboard/   # Main dashboard with charts
+│   │   ├── licenses/    # License management
+│   │   ├── machines/    # Machine monitoring
+│   │   ├── products/    # Product management
+│   │   ├── policies/    # Policy management
+│   │   ├── groups/      # Group management
+│   │   ├── entitlements/# Entitlement management
+│   │   ├── webhooks/    # Webhook management
+│   │   ├── users/       # User administration
+│   │   └── settings/    # User settings
 │   └── login/           # Authentication
+├── hooks/               # Custom React hooks
+│   ├── use-pagination.ts # Shared pagination state
+│   ├── use-debounce.ts  # Debounced search inputs
+│   └── use-sorting.ts   # Client-side column sorting
 ├── components/          # React components
-│   ├── ui/             # shadcn/ui components
-│   ├── licenses/       # License management
-│   ├── machines/       # Machine management
-│   ├── groups/         # Group management (NEW)
-│   ├── entitlements/   # Entitlement management (NEW)
-│   ├── webhooks/       # Webhook management (NEW)
-│   └── users/          # User management
-├── lib/                # Utilities and API
-│   ├── api/            # Keygen API client
-│   │   └── resources/  # All API resource classes
-│   ├── auth/           # Authentication
-│   └── types/          # TypeScript types
+│   ├── ui/              # shadcn/ui components
+│   ├── shared/          # Reusable (pagination, metadata, sorting)
+│   ├── dashboard/       # Dashboard charts and stats
+│   ├── settings/        # Settings page
+│   ├── licenses/        # License CRUD + details + relationships
+│   ├── machines/        # Machine CRUD + details + edit
+│   ├── products/        # Product CRUD + details + edit
+│   ├── policies/        # Policy CRUD + details (advanced fields)
+│   ├── groups/          # Group CRUD + details + edit
+│   ├── entitlements/    # Entitlement CRUD + details
+│   ├── webhooks/        # Webhook CRUD + details + edit
+│   └── users/           # User CRUD + details + edit
+├── lib/                 # Utilities and API
+│   ├── api/             # Keygen API client
+│   │   └── resources/   # All API resource classes
+│   ├── auth/            # Authentication
+│   ├── types/           # TypeScript types
+│   └── utils/           # Utility modules (clipboard, errors)
 ```
 
 ---
 
 ## 🏢 Enterprise Features
 
-### New in Version 2.0
+### New in Version 3.0
 
-Keygen UI now includes advanced enterprise-grade features that transform it from a basic license management tool into a comprehensive licensing platform:
+Keygen UI now includes comprehensive detail views with relationship management, historical metrics, and user settings:
+
+#### 📊 **Dashboard Metrics Charts**
+- **Historical Trends**: 14-day area charts for Licenses, Validations, Machines, and Users
+- **Lazy Loading**: Each chart tab fetches data independently with caching
+- **CE Compatible**: Works with Keygen Community Edition metrics API
+
+#### ⚙️ **User Settings**
+- **Profile Management**: Edit name, email, and change password
+- **Account Info**: View account ID, role, status with copy buttons
+- **Public Keys**: Display Ed25519/RSA keys for verification
+
+#### 🔗 **Relationship Management**
+- **Inline Editing**: Change policy, group, owner via select dropdowns in detail dialogs
+- **Attach/Detach**: Manage users and entitlements on licenses and policies
+- **On-Demand Loading**: Dropdown options load only when needed
+
+#### 🛡️ **Comprehensive Policy Editor**
+- **40+ Fields**: All scheme, limit, flag, strategy, and heartbeat settings
+- **Collapsible Sections**: Advanced settings organized into 6 collapsible groups
+- **Smart Submission**: Only sends non-default values to the API
 
 #### 🏗️ **Organizational Management**
-- **Groups**: Organize users and licenses into hierarchical groups
-- **Resource Limits**: Set per-group limits for licenses, machines, and users
-- **Bulk Assignment**: Efficiently manage group memberships
-
-#### 🛡️ **Feature Control System**
-- **Entitlements**: Create feature flags and permission-based licensing
-- **Code-Based Integration**: Easy integration with your application code
-- **License Association**: Link specific features to individual licenses
-
-#### 🔗 **Real-Time Notifications**
-- **Webhook Management**: Configure endpoints for 35+ event types
-- **Event Categories**: Organized by resource type (license, machine, product, etc.)
-- **Security Features**: Signing keys and delivery verification
-- **Testing Tools**: Built-in webhook testing and monitoring
-
-#### 📊 **Enhanced Analytics**
-- **Request Logs**: Complete API usage monitoring (API ready)
-- **Performance Metrics**: Track system performance and usage patterns
-- **Event Analytics**: Webhook delivery success rates and error tracking
+- **Groups**: Organize users and licenses with metadata support
+- **Entitlements**: Feature-based licensing with code identifiers
+- **Webhooks**: Configure 35+ event types with testing and signing keys
 
 ### API Coverage
 
-Keygen UI now covers **90%** of the Keygen API surface area with:
-- 9 complete resource management interfaces
-- Professional CRUD operations for all resources
-- Advanced filtering and search capabilities
+Keygen UI covers **95%** of the Keygen API surface area with:
+- 10 complete resource management interfaces (including metrics and settings)
+- Full relationship management (policy, group, owner, users, entitlements)
+- Advanced filtering, search, sorting, and pagination
 - Comprehensive error handling and user feedback
 
 ---
@@ -481,6 +496,7 @@ This project is licensed under the **MIT License** - see the [LICENSE](LICENSE) 
 
 ## 🙏 Acknowledgments
 
+- **[Orçun Başlak](https://github.com/orcunbaslak/keygen-ui)** - Original author; this project is forked from his work
 - **[Keygen](https://keygen.sh/)** - For providing an excellent software licensing API
 - **[shadcn/ui](https://ui.shadcn.com/)** - For beautiful, accessible UI components
 - **[Next.js Team](https://nextjs.org/)** - For the amazing React framework
@@ -498,7 +514,7 @@ This project is licensed under the **MIT License** - see the [LICENSE](LICENSE) 
 
 <div align="center">
 
-**Built with ❤️ by Orçun Başlak**
+**Built with ❤️ for the Keygen community**
 
 [⭐ Star this repository](https://github.com/rorph/keygen-ui) if you find it helpful!
 
