@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 Keygen-UI is a comprehensive frontend interface for Keygen API licensing management. Built with Next.js 15, React 19, TypeScript, and Tailwind CSS v4, it provides complete CRUD operations for licenses, machines, products, policies, and users.
 
-**Status**: Phase 1 Complete - Enhanced Production Ready ✅
+**Status**: Phase 2 Complete - Pagination, Stats & API Fixes ✅
 **API Integration**: Connected to Keygen instance at `https://lms.pvx.ai/v1`
 **Authentication**: Fully implemented with protected routes
 
@@ -65,16 +65,21 @@ src/
 │   │   ├── licenses/       # License management
 │   │   ├── machines/       # Machine monitoring
 │   │   ├── products/       # Product management
-│   │   ├── policies/       # Policy management (placeholder)
+│   │   ├── policies/       # Policy management
 │   │   ├── users/          # User administration
+│   │   ├── groups/         # Group management
+│   │   ├── entitlements/   # Entitlement management
+│   │   ├── webhooks/       # Webhook management
 │   │   └── layout.tsx      # Dashboard layout with sidebar
 │   ├── login/              # Authentication pages
 │   ├── globals.css
 │   ├── layout.tsx
 │   └── page.tsx
+├── hooks/                  # Custom React hooks
+│   └── use-pagination.ts   # Shared pagination state hook
 ├── lib/                    # Utility functions and shared code
 │   ├── api/                # Keygen API client
-│   │   ├── client.ts       # Main API client
+│   │   ├── client.ts       # Main API client (array params, page[size]/page[number] pagination)
 │   │   ├── index.ts        # API exports
 │   │   └── resources/      # Resource-specific API methods
 │   ├── auth/               # Authentication context and utilities
@@ -82,10 +87,15 @@ src/
 │   └── utils.ts            # Utility functions
 └── components/             # React components
     ├── ui/                 # shadcn/ui components
+    ├── shared/             # Shared components (pagination-controls, confirm-dialog)
     ├── auth/               # Authentication components
     ├── licenses/           # License management components
     ├── machines/           # Machine management components
     ├── products/           # Product management components
+    ├── policies/           # Policy management components
+    ├── groups/             # Group management components
+    ├── entitlements/       # Entitlement management components
+    ├── webhooks/           # Webhook management components
     └── users/              # User management components
 ```
 
@@ -120,20 +130,53 @@ Components are installed to `@/components/ui/` with New York style and CSS varia
 ### API Integration Pattern
 
 ```typescript
-// Use existing API client
+// Use existing API client with pagination
 import { getKeygenApi } from '@/lib/api'
+import { usePagination } from '@/hooks/use-pagination'
 
 const api = getKeygenApi()
+const pagination = usePagination()
 
-// Example API call with error handling
-try {
-  const response = await api.licenses.list({ limit: 50 })
-  setData(response.data || [])
-} catch (error: any) {
-  console.error('Failed to load data:', error)
-  toast.error('Failed to load data')
-}
+// Paginated API call with error handling
+const loadData = useCallback(async () => {
+  try {
+    setLoading(true)
+    const response = await api.licenses.list(pagination.paginationParams)
+    setData(response.data || [])
+    const count = typeof response.meta?.count === 'number' ? response.meta.count : (response.data || []).length
+    pagination.setTotalCount(count)
+  } catch (error: unknown) {
+    handleLoadError(error, 'licenses')
+  } finally {
+    setLoading(false)
+  }
+}, [api.licenses, pagination.paginationParams])
 ```
+
+### Pagination Pattern
+
+All management pages use the `usePagination` hook + `PaginationControls` component:
+
+- **`src/hooks/use-pagination.ts`** - Manages `pageSize` (default 25), `pageNumber`, `totalCount`, navigation actions
+- **`src/components/shared/pagination-controls.tsx`** - Renders "Showing X-Y of Z", page size selector, navigation buttons
+- The Keygen API uses `page[size]` and `page[number]` query parameters (handled by `client.buildPaginationParams()`)
+- Stats cards use separate API calls with `limit: 1` to get accurate `meta.count` values (not derived from loaded array)
+
+### User Listing Pattern
+
+The Keygen API defaults to only returning `role=user` accounts. To list all users, always pass `ALL_USER_ROLES`:
+
+```typescript
+import { User } from '@/lib/types/keygen'
+
+const ALL_USER_ROLES: User['attributes']['role'][] = [
+  'admin', 'developer', 'sales-agent', 'support-agent', 'read-only', 'user'
+]
+
+const response = await api.users.list({ ...pagination.paginationParams, roles: ALL_USER_ROLES })
+```
+
+This is used in both `user-management.tsx` and `section-cards.tsx` (dashboard stats).
 
 ### Component Structure
 
@@ -191,13 +234,16 @@ KEYGEN_ADMIN_PASSWORD=[configured]
 
 ## Important Notes
 
-- **Production Ready**: Phase 1 complete, fully functional enterprise-grade licensing platform
+- **Production Ready**: Phase 2 complete with pagination, accurate stats, and full API parameter support
 - **Real API Integration**: Connected to live Keygen instance
 - **Type Safety**: Complete TypeScript coverage with strict mode
+- **Pagination**: All listing pages use server-side pagination via `page[size]`/`page[number]`
+- **Stats Accuracy**: Stats cards use dedicated API calls with `limit: 1` to get `meta.count`, not array length
+- **Array Parameters**: API client supports `key[]=value` format for array query parameters (e.g., `roles[]`)
 - **Performance**: Optimized with Turbopack bundling
 - **Responsive Design**: Mobile-first approach with Tailwind CSS v4
-- **Error Handling**: Comprehensive error management throughout
-- **Enhanced Features**: Now includes Groups, Entitlements, Webhooks, and Request Logs support
+- **Error Handling**: Comprehensive error management with `handleLoadError` and `handleCrudError` utilities
+- **Enhanced Features**: Groups, Entitlements, Webhooks, Request Logs, and shared pagination infrastructure
 
 ## 🤖 Agentic Development Patterns & Troubleshooting
 

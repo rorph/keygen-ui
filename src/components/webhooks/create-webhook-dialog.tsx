@@ -9,7 +9,6 @@ import { Label } from '@/components/ui/label'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { Switch } from '@/components/ui/switch'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Separator } from '@/components/ui/separator'
 import { toast } from 'sonner'
@@ -30,7 +29,6 @@ export function CreateWebhookDialog({
   const [formData, setFormData] = useState({
     url: '',
     subscriptions: [] as string[],
-    enabled: true
   })
 
   const api = getKeygenApi()
@@ -65,14 +63,12 @@ export function CreateWebhookDialog({
       await api.webhooks.create({
         url: formData.url.trim(),
         subscriptions: formData.subscriptions,
-        enabled: formData.enabled
       })
 
       // Reset form
       setFormData({
         url: '',
         subscriptions: [],
-        enabled: true
       })
       
       onWebhookCreated()
@@ -144,15 +140,6 @@ export function CreateWebhookDialog({
                   </p>
                 </div>
 
-                <div className="flex items-center space-x-2">
-                  <Switch
-                    id="enabled"
-                    checked={formData.enabled}
-                    onCheckedChange={(enabled) => setFormData(prev => ({ ...prev, enabled }))}
-                    disabled={loading}
-                  />
-                  <Label htmlFor="enabled">Enable webhook immediately</Label>
-                </div>
               </CardContent>
             </Card>
 

@@ -15,6 +15,7 @@ export class UserResource {
     // Add filter parameters
     if (filters.email) params.email = filters.email;
     if (filters.role) params.role = filters.role;
+    if (filters.roles && filters.roles.length > 0) params.roles = filters.roles;
     if (filters.status) params.status = filters.status;
 
     return this.client.request<User[]>('users', { params });

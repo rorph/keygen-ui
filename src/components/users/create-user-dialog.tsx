@@ -28,10 +28,15 @@ import { handleFormError } from '@/lib/utils/error-handling'
 
 interface CreateUserDialogProps {
   onUserCreated?: () => void
+  open?: boolean
+  onOpenChange?: (open: boolean) => void
 }
 
-export function CreateUserDialog({ onUserCreated }: CreateUserDialogProps) {
-  const [open, setOpen] = useState(false)
+export function CreateUserDialog({ onUserCreated, open: controlledOpen, onOpenChange }: CreateUserDialogProps) {
+  const [internalOpen, setInternalOpen] = useState(false)
+  const isControlled = controlledOpen !== undefined
+  const open = isControlled ? controlledOpen : internalOpen
+  const setOpen = isControlled ? (onOpenChange || (() => {})) : setInternalOpen
   const [loading, setLoading] = useState(false)
   const [formData, setFormData] = useState({
     email: '',
@@ -119,12 +124,14 @@ export function CreateUserDialog({ onUserCreated }: CreateUserDialogProps) {
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <Button>
-          <Plus className="mr-2 h-4 w-4" />
-          Create User
-        </Button>
-      </DialogTrigger>
+      {!isControlled && (
+        <DialogTrigger asChild>
+          <Button>
+            <Plus className="mr-2 h-4 w-4" />
+            Create User
+          </Button>
+        </DialogTrigger>
+      )}
       <DialogContent className="sm:max-w-[525px]">
         <DialogHeader>
           <DialogTitle>Create New User</DialogTitle>

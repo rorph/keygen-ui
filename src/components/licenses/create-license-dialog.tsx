@@ -34,10 +34,15 @@ import { toast } from 'sonner'
 
 interface CreateLicenseDialogProps {
   onLicenseCreated?: () => void
+  open?: boolean
+  onOpenChange?: (open: boolean) => void
 }
 
-export function CreateLicenseDialog({ onLicenseCreated }: CreateLicenseDialogProps) {
-  const [open, setOpen] = useState(false)
+export function CreateLicenseDialog({ onLicenseCreated, open: controlledOpen, onOpenChange }: CreateLicenseDialogProps) {
+  const [internalOpen, setInternalOpen] = useState(false)
+  const isControlled = controlledOpen !== undefined
+  const open = isControlled ? controlledOpen : internalOpen
+  const setOpen = isControlled ? (onOpenChange || (() => {})) : setInternalOpen
   const [loading, setLoading] = useState(false)
   const [policies, setPolicies] = useState<Policy[]>([])
   const [users, setUsers] = useState<User[]>([])
@@ -168,12 +173,14 @@ export function CreateLicenseDialog({ onLicenseCreated }: CreateLicenseDialogPro
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <Button>
-          <Plus className="mr-2 h-4 w-4" />
-          Create License
-        </Button>
-      </DialogTrigger>
+      {!isControlled && (
+        <DialogTrigger asChild>
+          <Button>
+            <Plus className="mr-2 h-4 w-4" />
+            Create License
+          </Button>
+        </DialogTrigger>
+      )}
       <DialogContent className="sm:max-w-[720px]">
         <DialogHeader>
           <DialogTitle>New License</DialogTitle>

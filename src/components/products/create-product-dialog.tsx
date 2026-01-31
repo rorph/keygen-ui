@@ -29,10 +29,15 @@ import { handleFormError } from '@/lib/utils/error-handling'
 
 interface CreateProductDialogProps {
   onProductCreated?: () => void
+  open?: boolean
+  onOpenChange?: (open: boolean) => void
 }
 
-export function CreateProductDialog({ onProductCreated }: CreateProductDialogProps) {
-  const [open, setOpen] = useState(false)
+export function CreateProductDialog({ onProductCreated, open: controlledOpen, onOpenChange }: CreateProductDialogProps) {
+  const [internalOpen, setInternalOpen] = useState(false)
+  const isControlled = controlledOpen !== undefined
+  const open = isControlled ? controlledOpen : internalOpen
+  const setOpen = isControlled ? (onOpenChange || (() => {})) : setInternalOpen
   const [loading, setLoading] = useState(false)
   const [platforms, setPlatforms] = useState<string[]>([])
   const [platformInput, setPlatformInput] = useState('')
@@ -40,6 +45,7 @@ export function CreateProductDialog({ onProductCreated }: CreateProductDialogPro
     name: '',
     url: '',
     distributionStrategy: 'LICENSED' as 'LICENSED' | 'OPEN' | 'CLOSED',
+    permissions: '',
     metadata: ''
   })
 
@@ -47,7 +53,7 @@ export function CreateProductDialog({ onProductCreated }: CreateProductDialogPro
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    
+
     if (!formData.name.trim()) {
       toast.error('Please enter a product name')
       return
@@ -55,7 +61,7 @@ export function CreateProductDialog({ onProductCreated }: CreateProductDialogPro
 
     try {
       setLoading(true)
-      
+
       let metadata: Record<string, unknown> | undefined
       if (formData.metadata.trim()) {
         try {
@@ -66,11 +72,17 @@ export function CreateProductDialog({ onProductCreated }: CreateProductDialogPro
         }
       }
 
+      // Parse comma-separated permissions
+      const permissions = formData.permissions.trim()
+        ? formData.permissions.split(',').map(p => p.trim()).filter(p => p.length > 0)
+        : undefined
+
       await api.products.create({
         name: formData.name,
         url: formData.url || undefined,
         distributionStrategy: formData.distributionStrategy,
         platforms: platforms.length > 0 ? platforms : undefined,
+        permissions,
         metadata
       })
 
@@ -90,6 +102,7 @@ export function CreateProductDialog({ onProductCreated }: CreateProductDialogPro
       name: '',
       url: '',
       distributionStrategy: 'LICENSED',
+      permissions: '',
       metadata: ''
     })
     setPlatforms([])
@@ -126,12 +139,14 @@ export function CreateProductDialog({ onProductCreated }: CreateProductDialogPro
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <Button>
-          <Plus className="mr-2 h-4 w-4" />
-          Create Product
-        </Button>
-      </DialogTrigger>
+      {!isControlled && (
+        <DialogTrigger asChild>
+          <Button>
+            <Plus className="mr-2 h-4 w-4" />
+            Create Product
+          </Button>
+        </DialogTrigger>
+      )}
       <DialogContent className="sm:max-w-[525px]">
         <DialogHeader>
           <DialogTitle>Create New Product</DialogTitle>
@@ -231,10 +246,23 @@ export function CreateProductDialog({ onProductCreated }: CreateProductDialogPro
           </div>
 
           <div className="space-y-2">
+            <Label htmlFor="permissions">Permissions</Label>
+            <Input
+              id="permissions"
+              placeholder="e.g., license.read, license.create, product.read"
+              value={formData.permissions}
+              onChange={(e) => setFormData({ ...formData, permissions: e.target.value })}
+            />
+            <p className="text-xs text-muted-foreground">
+              Comma-separated list of permission strings for this product
+            </p>
+          </div>
+
+          <div className="space-y-2">
             <Label htmlFor="metadata">Metadata (JSON)</Label>
             <Textarea
               id="metadata"
-              placeholder='{&quot;version&quot;: &quot;1.0.0&quot;, &quot;description&quot;: &quot;Product description&quot;}'
+              placeholder={'{"version": "1.0.0", "description": "Product description"}'}
               value={formData.metadata}
               onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setFormData({ ...formData, metadata: e.target.value })}
               rows={3}
@@ -245,9 +273,9 @@ export function CreateProductDialog({ onProductCreated }: CreateProductDialogPro
           </div>
 
           <DialogFooter>
-            <Button 
-              type="button" 
-              variant="outline" 
+            <Button
+              type="button"
+              variant="outline"
               onClick={() => {
                 setOpen(false)
                 resetForm()

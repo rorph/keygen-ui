@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { toast } from 'sonner'
 import { handleFormError } from '@/lib/utils/error-handling'
+import { MetadataEditor } from '@/components/shared/metadata-editor'
 
 interface CreateGroupDialogProps {
   open: boolean
@@ -25,27 +26,29 @@ export function CreateGroupDialog({
     name: '',
     maxLicenses: '',
     maxMachines: '',
-    maxUsers: ''
+    maxUsers: '',
+    metadata: {} as Record<string, string>
   })
 
   const api = getKeygenApi()
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    
+
     if (!formData.name.trim()) {
       toast.error('Group name is required')
       return
     }
 
     setLoading(true)
-    
+
     try {
       const groupData: {
         name: string;
         maxLicenses?: number;
         maxMachines?: number;
         maxUsers?: number;
+        metadata?: Record<string, unknown>;
       } = {
         name: formData.name.trim()
       }
@@ -61,16 +64,22 @@ export function CreateGroupDialog({
         groupData.maxUsers = parseInt(formData.maxUsers)
       }
 
+      // Add metadata if any keys are present
+      if (Object.keys(formData.metadata).length > 0) {
+        groupData.metadata = formData.metadata
+      }
+
       await api.groups.create(groupData)
-      
+
       // Reset form
       setFormData({
         name: '',
         maxLicenses: '',
         maxMachines: '',
-        maxUsers: ''
+        maxUsers: '',
+        metadata: {}
       })
-      
+
       onGroupCreated()
     } catch (error: unknown) {
       handleFormError(error, 'Group')
@@ -88,7 +97,7 @@ export function CreateGroupDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-md max-h-[90vh] overflow-y-auto">
         <form onSubmit={handleSubmit}>
           <DialogHeader>
             <DialogTitle>Create Group</DialogTitle>
@@ -96,7 +105,7 @@ export function CreateGroupDialog({
               Create a new group to organize users and licenses.
             </DialogDescription>
           </DialogHeader>
-          
+
           <div className="grid gap-4 py-4">
             <div className="grid gap-2">
               <Label htmlFor="name">Group Name *</Label>
@@ -148,6 +157,12 @@ export function CreateGroupDialog({
                 disabled={loading}
               />
             </div>
+
+            <MetadataEditor
+              value={formData.metadata}
+              onChange={(metadata) => setFormData(prev => ({ ...prev, metadata }))}
+              disabled={loading}
+            />
           </div>
 
           <DialogFooter>

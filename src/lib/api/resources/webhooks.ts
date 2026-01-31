@@ -45,30 +45,54 @@ export class WebhookResource {
   constructor(private client: KeygenClient) {}
 
   /**
+   * Normalize webhook data - the API may return subscriptions as a JSON string
+   * instead of an array (e.g. "[]" instead of [])
+   */
+  private normalizeWebhook(webhook: Webhook): Webhook {
+    const subs = webhook.attributes.subscriptions;
+    if (typeof subs === 'string') {
+      try {
+        const parsed = JSON.parse(subs);
+        webhook.attributes.subscriptions = Array.isArray(parsed) ? parsed : [];
+      } catch {
+        webhook.attributes.subscriptions = [];
+      }
+    } else if (!Array.isArray(subs)) {
+      webhook.attributes.subscriptions = [];
+    }
+    return webhook;
+  }
+
+  /**
    * List all webhooks
    */
   async list(filters: WebhookFilters = {}): Promise<KeygenListResponse<Webhook>> {
-    const params: Record<string, unknown> = {};
-    
-    // Add pagination
-    if (filters.limit) params.limit = filters.limit;
-    if (filters.page) params.page = filters.page;
-    
+    const params: Record<string, unknown> = {
+      ...this.client.buildPaginationParams(filters),
+    };
+
     // Add filter parameters
-    if (filters.enabled !== undefined) params.enabled = filters.enabled;
     if (filters.url) params.url = filters.url;
     if (filters.subscriptions && filters.subscriptions.length > 0) {
       params.subscriptions = filters.subscriptions.join(',');
     }
 
-    return this.client.request<Webhook[]>('webhook-endpoints', { params });
+    const response = await this.client.request<Webhook[]>('webhook-endpoints', { params });
+    if (Array.isArray(response.data)) {
+      response.data.forEach(w => this.normalizeWebhook(w));
+    }
+    return response;
   }
 
   /**
    * Get a specific webhook by ID
    */
   async get(id: string): Promise<KeygenResponse<Webhook>> {
-    return this.client.request<Webhook>(`webhook-endpoints/${id}`);
+    const response = await this.client.request<Webhook>(`webhook-endpoints/${id}`);
+    if (response.data) {
+      this.normalizeWebhook(response.data);
+    }
+    return response;
   }
 
   /**
@@ -77,7 +101,6 @@ export class WebhookResource {
   async create(webhookData: {
     url: string;
     subscriptions: string[];
-    enabled?: boolean;
   }): Promise<KeygenResponse<Webhook>> {
     const body = {
       data: {
@@ -85,7 +108,6 @@ export class WebhookResource {
         attributes: {
           url: webhookData.url.trim(),
           subscriptions: webhookData.subscriptions,
-          enabled: webhookData.enabled !== false, // Default to true
         },
       },
     };
@@ -102,7 +124,6 @@ export class WebhookResource {
   async update(id: string, updates: {
     url?: string;
     subscriptions?: string[];
-    enabled?: boolean;
   }): Promise<KeygenResponse<Webhook>> {
     const body = {
       data: {
@@ -111,7 +132,6 @@ export class WebhookResource {
         attributes: {
           ...(updates.url && { url: updates.url.trim() }),
           ...(updates.subscriptions && { subscriptions: updates.subscriptions }),
-          ...(updates.enabled !== undefined && { enabled: updates.enabled }),
         },
       },
     };
@@ -129,20 +149,6 @@ export class WebhookResource {
     await this.client.request(`webhook-endpoints/${id}`, {
       method: 'DELETE',
     });
-  }
-
-  /**
-   * Enable a webhook
-   */
-  async enable(id: string): Promise<KeygenResponse<Webhook>> {
-    return this.update(id, { enabled: true });
-  }
-
-  /**
-   * Disable a webhook
-   */
-  async disable(id: string): Promise<KeygenResponse<Webhook>> {
-    return this.update(id, { enabled: false });
   }
 
   /**

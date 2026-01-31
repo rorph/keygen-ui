@@ -9,15 +9,17 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
 import { Skeleton } from '@/components/ui/skeleton'
-import { Switch } from '@/components/ui/switch'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
-import { Plus, Search, MoreHorizontal, Webhook as WebhookIcon, Trash2, Edit, Eye, Play, Pause, TestTube } from 'lucide-react'
+import { Plus, Search, MoreHorizontal, Webhook as WebhookIcon, Trash2, Edit, Eye, TestTube, X } from 'lucide-react'
 import { toast } from 'sonner'
 import { handleLoadError, handleCrudError } from '@/lib/utils/error-handling'
+import { copyToClipboard } from '@/lib/utils/clipboard'
 import { CreateWebhookDialog } from './create-webhook-dialog'
 import { EditWebhookDialog } from './edit-webhook-dialog'
 import { DeleteWebhookDialog } from './delete-webhook-dialog'
 import { WebhookDetailsDialog } from './webhook-details-dialog'
+import { usePagination } from '@/hooks/use-pagination'
+import { PaginationControls } from '@/components/shared/pagination-controls'
 
 export function WebhookManagement() {
   const [webhooks, setWebhooks] = useState<Webhook[]>([])
@@ -28,49 +30,27 @@ export function WebhookManagement() {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   const [detailsDialogOpen, setDetailsDialogOpen] = useState(false)
   const [selectedWebhook, setSelectedWebhook] = useState<Webhook | null>(null)
-  const [togglingWebhooks, setTogglingWebhooks] = useState<Set<string>>(new Set())
-  
+
   const api = getKeygenApi()
+  const pagination = usePagination()
 
   const loadWebhooks = useCallback(async () => {
     try {
-      const response = await api.webhooks.list({ limit: 100 })
+      setLoading(true)
+      const response = await api.webhooks.list(pagination.paginationParams)
       setWebhooks(response.data || [])
+      const count = typeof response.meta?.count === 'number' ? response.meta.count : (response.data || []).length
+      pagination.setTotalCount(count)
     } catch (error: unknown) {
       handleLoadError(error, 'webhooks')
     } finally {
       setLoading(false)
     }
-  }, [api.webhooks])
+  }, [api.webhooks, pagination.paginationParams])
 
   useEffect(() => {
     loadWebhooks()
   }, [loadWebhooks])
-
-  const handleToggleWebhook = async (webhook: Webhook) => {
-    setTogglingWebhooks(prev => new Set(prev).add(webhook.id))
-    
-    try {
-      if (webhook.attributes.enabled) {
-        await api.webhooks.disable(webhook.id)
-        toast.success('Webhook disabled')
-      } else {
-        await api.webhooks.enable(webhook.id)
-        toast.success('Webhook enabled')
-      }
-      loadWebhooks()
-    } catch (error: unknown) {
-      handleCrudError(error, 'update', 'Webhook', {
-        customMessage: `Failed to ${webhook.attributes.enabled ? 'disable' : 'enable'} webhook`
-      })
-    } finally {
-      setTogglingWebhooks(prev => {
-        const next = new Set(prev)
-        next.delete(webhook.id)
-        return next
-      })
-    }
-  }
 
   const handleTestWebhook = async (webhook: Webhook) => {
     try {
@@ -118,7 +98,12 @@ export function WebhookManagement() {
     toast.success('Webhook deleted successfully')
   }
 
-  const filteredWebhooks = webhooks.filter(webhook => 
+  useEffect(() => {
+    pagination.resetToFirstPage()
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchTerm])
+
+  const filteredWebhooks = webhooks.filter(webhook =>
     webhook.attributes.url.toLowerCase().includes(searchTerm.toLowerCase()) ||
     webhook.attributes.subscriptions.some(event => event.toLowerCase().includes(searchTerm.toLowerCase()))
   )
@@ -155,13 +140,23 @@ export function WebhookManagement() {
         </CardHeader>
         <CardContent>
           <div className="flex items-center space-x-2">
-            <Search className="h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Search webhooks..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="flex-1"
-            />
+            <Search className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+            <div className="relative flex-1">
+              <Input
+                placeholder="Search webhooks..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pr-8"
+              />
+              {searchTerm && (
+                <button
+                  onClick={() => setSearchTerm('')}
+                  className="absolute right-2 top-2.5 text-muted-foreground hover:text-foreground"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              )}
+            </div>
           </div>
         </CardContent>
       </Card>
@@ -171,7 +166,7 @@ export function WebhookManagement() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <WebhookIcon className="h-5 w-5" />
-            Webhooks ({filteredWebhooks.length})
+            Webhooks ({pagination.totalCount})
           </CardTitle>
           <CardDescription>
             Manage webhook endpoints and event subscriptions
@@ -188,9 +183,9 @@ export function WebhookManagement() {
             <Table>
               <TableHeader>
                 <TableRow>
+                  <TableHead className="w-[85px]">ID</TableHead>
                   <TableHead>URL</TableHead>
                   <TableHead>Events</TableHead>
-                  <TableHead>Status</TableHead>
                   <TableHead>Created</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
@@ -204,7 +199,12 @@ export function WebhookManagement() {
                   </TableRow>
                 ) : (
                   filteredWebhooks.map((webhook) => (
-                    <TableRow key={webhook.id}>
+                    <TableRow key={webhook.id} className="cursor-pointer" onClick={(e) => { if (!(e.target as HTMLElement).closest('button, a, [role="menuitem"]')) handleViewDetails(webhook) }}>
+                      <TableCell>
+                        <button onClick={() => copyToClipboard(webhook.id, 'Webhook ID')} className="cursor-pointer hover:underline" title={webhook.id}>
+                          <code className="text-xs font-mono text-muted-foreground">{webhook.id.split('-')[0]}</code>
+                        </button>
+                      </TableCell>
                       <TableCell className="font-medium">
                         <div className="flex items-center gap-2">
                           <WebhookIcon className="h-4 w-4 text-muted-foreground" />
@@ -223,18 +223,6 @@ export function WebhookManagement() {
                               +{webhook.attributes.subscriptions.length - 3} more
                             </Badge>
                           )}
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-2">
-                          <Switch
-                            checked={webhook.attributes.enabled}
-                            disabled={togglingWebhooks.has(webhook.id)}
-                            onCheckedChange={() => handleToggleWebhook(webhook)}
-                          />
-                          <Badge variant={webhook.attributes.enabled ? 'default' : 'secondary'}>
-                            {webhook.attributes.enabled ? 'Enabled' : 'Disabled'}
-                          </Badge>
                         </div>
                       </TableCell>
                       <TableCell>{formatDate(webhook.attributes.created)}</TableCell>
@@ -258,25 +246,8 @@ export function WebhookManagement() {
                               <Edit className="h-4 w-4" />
                               Edit
                             </DropdownMenuItem>
-                            <DropdownMenuItem 
-                              onClick={() => handleToggleWebhook(webhook)} 
-                              className="gap-2"
-                              disabled={togglingWebhooks.has(webhook.id)}
-                            >
-                              {webhook.attributes.enabled ? (
-                                <>
-                                  <Pause className="h-4 w-4" />
-                                  Disable
-                                </>
-                              ) : (
-                                <>
-                                  <Play className="h-4 w-4" />
-                                  Enable
-                                </>
-                              )}
-                            </DropdownMenuItem>
-                            <DropdownMenuItem 
-                              onClick={() => handleDelete(webhook)} 
+                            <DropdownMenuItem
+                              onClick={() => handleDelete(webhook)}
                               className="gap-2 text-destructive focus:text-destructive"
                             >
                               <Trash2 className="h-4 w-4" />
@@ -291,6 +262,23 @@ export function WebhookManagement() {
               </TableBody>
             </Table>
           )}
+
+          <PaginationControls
+            startItem={pagination.startItem}
+            endItem={pagination.endItem}
+            totalCount={pagination.totalCount}
+            pageNumber={pagination.pageNumber}
+            totalPages={pagination.totalPages}
+            pageSize={pagination.pageSize}
+            hasNextPage={pagination.hasNextPage}
+            hasPrevPage={pagination.hasPrevPage}
+            onNextPage={pagination.goToNextPage}
+            onPrevPage={pagination.goToPrevPage}
+            onFirstPage={pagination.goToFirstPage}
+            onLastPage={pagination.goToLastPage}
+            onPageSizeChange={pagination.setPageSize}
+            loading={loading}
+          />
         </CardContent>
       </Card>
 

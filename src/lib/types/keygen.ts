@@ -76,8 +76,6 @@ export interface User extends KeygenResource {
     email: string;
     role: 'admin' | 'developer' | 'sales-agent' | 'support-agent' | 'read-only' | 'user';
     status: 'active' | 'inactive' | 'banned';
-    banned?: boolean; // Legacy property for backward compatibility
-    lastSignedInAt?: string;
     created: string;
     updated: string;
   };
@@ -98,6 +96,7 @@ export interface License extends KeygenResource {
     scheme: string;
     encrypted: boolean;
     expiry?: string;
+    permissions?: string[];
     metadata?: Record<string, unknown>;
     created: string;
     updated: string;
@@ -114,10 +113,13 @@ export interface Machine extends KeygenResource {
     hostname?: string;
     cores?: number;
     ip?: string;
+    memory?: number;
+    disk?: number;
     requireHeartbeat: boolean;
     heartbeatStatus: 'alive' | 'dead' | 'not-started';
     heartbeatDuration?: number;
     lastHeartbeat?: string;
+    metadata?: Record<string, unknown>;
     created: string;
     updated: string;
   };
@@ -145,8 +147,18 @@ export interface Policy extends KeygenResource {
   attributes: {
     name: string;
     duration?: number;
+    scheme?: string;
     strict: boolean;
     floating: boolean;
+    protected: boolean;
+    usePool: boolean;
+    maxMachines?: number;
+    maxProcesses?: number;
+    maxCores?: number;
+    maxUses?: number;
+    maxUsers?: number;
+    maxMemory?: number;
+    maxDisk?: number;
     requireProductScope: boolean;
     requirePolicyScope: boolean;
     requireMachineScope: boolean;
@@ -156,29 +168,26 @@ export interface Policy extends KeygenResource {
     requireChecksumScope: boolean;
     requireVersionScope: boolean;
     requireCheckIn: boolean;
-    checkInInterval: 'day' | 'week' | 'month' | 'year';
-    checkInIntervalCount: number;
-    usePool: boolean;
-    maxMachines?: number;
-    maxProcesses?: number;
-    maxCores?: number;
-    maxUses?: number;
-    protected: boolean;
+    checkInInterval?: 'day' | 'week' | 'month' | 'year';
+    checkInIntervalCount?: number;
     requireHeartbeat: boolean;
-    heartbeatDuration: number;
-    heartbeatCullStrategy: 'DEACTIVATE_DEAD' | 'KEEP_DEAD';
-    heartbeatResurrectionStrategy: 'NO_REVIVE' | 'REVIVE_DEAD';
-    heartbeatBasis: 'FROM_CREATION' | 'FROM_FIRST_PING';
-    machineUniquenessStrategy: 'UNIQUE_PER_ACCOUNT' | 'UNIQUE_PER_PRODUCT' | 'UNIQUE_PER_POLICY' | 'UNIQUE_PER_LICENSE';
-    machineMatchingStrategy: 'MATCH_BY_FINGERPRINT' | 'MATCH_BY_IP';
-    expirationStrategy: 'EXPIRE_IMMEDIATELY' | 'RESTRICT_ACCESS' | 'MAINTAIN_ACCESS' | 'ALLOW_ACCESS';
-    expirationBasis: 'FROM_CREATION' | 'FROM_FIRST_VALIDATION' | 'FROM_FIRST_ACTIVATION' | 'FROM_FIRST_DOWNLOAD' | 'FROM_FIRST_USE';
-    renewalBasis: 'FROM_EXPIRY' | 'FROM_NOW';
-    transferStrategy: 'TRANSFER_TO_USER' | 'KEEP_WITH_USER' | 'REVOKE_ACCESS';
-    authenticationStrategy: 'TOKEN' | 'LICENSE' | 'MIXED' | 'NONE';
-    machineLeasingStrategy: 'PER_MACHINE' | 'PER_USER' | 'ALL_MACHINES';
-    processLeasingStrategy: 'PER_MACHINE' | 'PER_LICENSE' | 'ALL_PROCESSES';
-    overageStrategy: 'NO_OVERAGE' | 'ALLOW_1_25X_OVERAGE' | 'ALLOW_1_5X_OVERAGE' | 'ALLOW_2X_OVERAGE' | 'ALWAYS_ALLOW_OVERAGE';
+    heartbeatDuration?: number;
+    heartbeatCullStrategy: string;
+    heartbeatResurrectionStrategy: string;
+    heartbeatBasis: string;
+    machineUniquenessStrategy: string;
+    machineMatchingStrategy: string;
+    componentUniquenessStrategy?: string;
+    componentMatchingStrategy?: string;
+    expirationStrategy: string;
+    expirationBasis: string;
+    renewalBasis: string;
+    transferStrategy: string;
+    authenticationStrategy: string;
+    machineLeasingStrategy: string;
+    processLeasingStrategy: string;
+    overageStrategy: string;
+    permissions?: string[];
     metadata: Record<string, unknown>;
     created: string;
     updated: string;
@@ -193,6 +202,7 @@ export interface Group extends KeygenResource {
     maxLicenses?: number;
     maxMachines?: number;
     maxUsers?: number;
+    metadata?: Record<string, unknown>;
     created: string;
     updated: string;
   };
@@ -204,6 +214,7 @@ export interface Entitlement extends KeygenResource {
   attributes: {
     name: string;
     code: string;
+    metadata?: Record<string, unknown>;
     created: string;
     updated: string;
   };
@@ -303,20 +314,29 @@ export interface LicenseFilters extends PaginationOptions {
   policy?: string;
   group?: string;
   product?: string;
+  machine?: string;
   status?: License['attributes']['status'];
+  metadata?: Record<string, string>;
 }
 
 export interface MachineFilters extends PaginationOptions {
   license?: string;
   user?: string;
   group?: string;
+  product?: string;
+  policy?: string;
+  key?: string;
   fingerprint?: string;
+  hostname?: string;
   ip?: string;
+  status?: string;
+  metadata?: Record<string, string>;
 }
 
 export interface UserFilters extends PaginationOptions {
   email?: string;
   role?: User['attributes']['role'];
+  roles?: User['attributes']['role'][];
   status?: User['attributes']['status'];
 }
 
@@ -336,7 +356,25 @@ export interface RequestLogFilters extends PaginationOptions {
 }
 
 export interface WebhookFilters extends PaginationOptions {
-  enabled?: boolean;
   url?: string;
   subscriptions?: string[];
+}
+
+// Event Log
+export interface EventLog extends KeygenResource {
+  type: 'event-logs';
+  attributes: {
+    event: string;
+    created: string;
+    updated: string;
+  };
+  relationships?: {
+    resource?: KeygenRelationship;
+    requestor?: KeygenRelationship;
+  };
+}
+
+export interface EventLogFilters extends PaginationOptions {
+  date?: { start?: string; end?: string };
+  event?: string;
 }

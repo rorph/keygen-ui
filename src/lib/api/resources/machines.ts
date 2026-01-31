@@ -16,8 +16,18 @@ export class MachineResource {
     if (filters.license) params.license = filters.license;
     if (filters.user) params.user = filters.user;
     if (filters.group) params.group = filters.group;
+    if (filters.product) params.product = filters.product;
+    if (filters.policy) params.policy = filters.policy;
+    if (filters.key) params.key = filters.key;
     if (filters.fingerprint) params.fingerprint = filters.fingerprint;
+    if (filters.hostname) params.hostname = filters.hostname;
     if (filters.ip) params.ip = filters.ip;
+    if (filters.status) params.status = filters.status;
+    if (filters.metadata) {
+      for (const [key, value] of Object.entries(filters.metadata)) {
+        params[`metadata[${key}]`] = value;
+      }
+    }
 
     return this.client.request<Machine[]>('machines', { params });
   }
@@ -40,6 +50,8 @@ export class MachineResource {
     hostname?: string;
     cores?: number;
     ip?: string;
+    memory?: number;
+    disk?: number;
   }): Promise<KeygenResponse<Machine>> {
     const body = {
       data: {
@@ -51,6 +63,8 @@ export class MachineResource {
           hostname: machineData.hostname,
           cores: machineData.cores,
           ip: machineData.ip,
+          memory: machineData.memory,
+          disk: machineData.disk,
         },
         relationships: {
           license: {
@@ -74,8 +88,12 @@ export class MachineResource {
     platform?: string;
     hostname?: string;
     cores?: number;
+    ip?: string;
+    memory?: number;
+    disk?: number;
     requireHeartbeat?: boolean;
     heartbeatDuration?: number;
+    metadata?: Record<string, unknown>;
   }): Promise<KeygenResponse<Machine>> {
     const body = {
       data: {

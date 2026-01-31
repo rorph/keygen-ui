@@ -1,5 +1,5 @@
 import { KeygenClient } from '../client';
-import { Product, KeygenResponse, ListOptions, KeygenListResponse } from '../../types/keygen';
+import { Product, KeygenResponse, PaginationOptions, KeygenListResponse } from '../../types/keygen';
 
 export class ProductResource {
   constructor(private client: KeygenClient) {}
@@ -7,23 +7,19 @@ export class ProductResource {
   /**
    * List all products
    */
-  async list(options?: ListOptions): Promise<KeygenListResponse<Product>> {
-    const queryParams = new URLSearchParams();
-    
-    if (options?.limit) queryParams.set('limit', options.limit.toString());
-    if (options?.page) queryParams.set('page', options.page.toString());
-    
-    const query = queryParams.toString();
-    const endpoint = query ? `/products?${query}` : '/products';
-    
-    return this.client.request<Product[]>(endpoint);
+  async list(options?: PaginationOptions): Promise<KeygenListResponse<Product>> {
+    const params: Record<string, unknown> = {
+      ...this.client.buildPaginationParams(options || {}),
+    };
+
+    return this.client.request<Product[]>('products', { params });
   }
 
   /**
    * Get a specific product by ID
    */
   async get(productId: string): Promise<KeygenResponse<Product>> {
-    return this.client.request<Product>(`/products/${productId}`);
+    return this.client.request<Product>(`products/${productId}`);
   }
 
   /**
@@ -34,9 +30,10 @@ export class ProductResource {
     url?: string;
     distributionStrategy?: 'LICENSED' | 'OPEN' | 'CLOSED';
     platforms?: string[];
+    permissions?: string[];
     metadata?: Record<string, unknown>;
   }): Promise<KeygenResponse<Product>> {
-    return this.client.request<Product>('/products', {
+    return this.client.request<Product>('products', {
       method: 'POST',
       body: {
         data: {
@@ -55,9 +52,10 @@ export class ProductResource {
     url?: string;
     distributionStrategy?: 'LICENSED' | 'OPEN' | 'CLOSED';
     platforms?: string[];
+    permissions?: string[];
     metadata?: Record<string, unknown>;
   }): Promise<KeygenResponse<Product>> {
-    return this.client.request<Product>(`/products/${productId}`, {
+    return this.client.request<Product>(`products/${productId}`, {
       method: 'PATCH',
       body: {
         data: {
@@ -73,7 +71,7 @@ export class ProductResource {
    * Delete a product
    */
   async delete(productId: string): Promise<void> {
-    await this.client.request<void>(`/products/${productId}`, {
+    await this.client.request<void>(`products/${productId}`, {
       method: 'DELETE'
     });
   }

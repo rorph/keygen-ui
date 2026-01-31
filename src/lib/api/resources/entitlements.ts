@@ -1,7 +1,7 @@
 import { KeygenClient } from '../client';
-import { Entitlement, KeygenResponse, ListOptions, KeygenListResponse } from '../../types/keygen';
+import { Entitlement, KeygenResponse, PaginationOptions, KeygenListResponse } from '../../types/keygen';
 
-export interface EntitlementFilters extends ListOptions {
+export interface EntitlementFilters extends PaginationOptions {
   name?: string;
   code?: string;
 }
@@ -13,12 +13,10 @@ export class EntitlementResource {
    * List all entitlements
    */
   async list(filters: EntitlementFilters = {}): Promise<KeygenListResponse<Entitlement>> {
-    const params: Record<string, unknown> = {};
-    
-    // Add pagination
-    if (filters.limit) params.limit = filters.limit;
-    if (filters.page) params.page = filters.page;
-    
+    const params: Record<string, unknown> = {
+      ...this.client.buildPaginationParams(filters),
+    };
+
     // Add filter parameters
     if (filters.name) params.name = filters.name;
     if (filters.code) params.code = filters.code;
@@ -92,10 +90,10 @@ export class EntitlementResource {
   /**
    * Get entitlement licenses
    */
-  async getLicenses(id: string, options: ListOptions = {}): Promise<KeygenResponse<unknown[]>> {
-    const params: Record<string, unknown> = {};
-    if (options.limit) params.limit = options.limit;
-    if (options.page) params.page = options.page;
+  async getLicenses(id: string, options: PaginationOptions = {}): Promise<KeygenResponse<unknown[]>> {
+    const params: Record<string, unknown> = {
+      ...this.client.buildPaginationParams(options),
+    };
 
     return this.client.request(`entitlements/${id}/licenses`, { params });
   }

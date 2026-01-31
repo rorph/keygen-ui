@@ -10,6 +10,7 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { Shield, KeyRound, Calendar, Info, Code } from 'lucide-react'
 // toast not needed; using centralized error handlers
 import { handleLoadError } from '@/lib/utils/error-handling'
+import { MetadataViewer } from '@/components/shared/metadata-viewer'
 
 interface EntitlementDetailsDialogProps {
   entitlement: Entitlement
@@ -209,6 +210,8 @@ export function EntitlementDetailsDialog({
               </div>
             </CardContent>
           </Card>
+
+          <MetadataViewer metadata={entitlement.attributes.metadata} />
         </div>
       </DialogContent>
     </Dialog>

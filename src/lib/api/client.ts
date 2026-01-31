@@ -58,7 +58,14 @@ export class KeygenClient {
     if (params) {
       Object.entries(params).forEach(([key, value]) => {
         if (value !== undefined && value !== null) {
-          if (typeof value === 'object') {
+          if (Array.isArray(value)) {
+            // Handle array parameters like roles[]=admin&roles[]=user
+            value.forEach((item) => {
+              if (item !== undefined && item !== null) {
+                searchParams.append(`${key}[]`, String(item));
+              }
+            });
+          } else if (typeof value === 'object') {
             // Handle nested objects like page[size], date[start], etc.
             Object.entries(value).forEach(([nestedKey, nestedValue]) => {
               if (nestedValue !== undefined && nestedValue !== null) {
@@ -142,6 +149,12 @@ export class KeygenClient {
         }
 
         throw apiError;
+      }
+
+      // Normalize response: Keygen API puts pagination meta inside links.meta
+      // Copy it to top-level meta so consumers can use response.meta.count
+      if (data && !data.meta && data.links?.meta) {
+        data.meta = data.links.meta;
       }
 
       return data;
@@ -252,13 +265,15 @@ export class KeygenClient {
    */
   buildPaginationParams(options: PaginationOptions = {}) {
     const params: Record<string, unknown> = {};
+    const page: Record<string, number> = {};
 
-    if (options.limit) {
-      params.limit = options.limit;
-    }
+    if (options.limit) page.size = options.limit;
+    if (options.page?.size) page.size = options.page.size;
+    if (options.page?.number) page.number = options.page.number;
 
-    if (options.page) {
-      params.page = options.page;
+    if (Object.keys(page).length > 0) {
+      if (!page.number) page.number = 1;
+      params.page = page;
     }
 
     return params;

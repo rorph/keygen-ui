@@ -8,10 +8,9 @@ import { GroupResource } from './resources/groups';
 import { EntitlementResource } from './resources/entitlements';
 import { RequestLogResource } from './resources/request-logs';
 import { WebhookResource } from './resources/webhooks';
-
-// Additional resource imports (to be created)
-// import { ProcessResource } from './resources/processes';
-// import { ComponentResource } from './resources/components';
+import { EventLogResource } from './resources/event-logs';
+import { AnalyticsResource } from './resources/analytics';
+import { MetricsResource } from './resources/metrics';
 
 export class KeygenApi {
   public licenses: LicenseResource;
@@ -23,10 +22,9 @@ export class KeygenApi {
   public entitlements: EntitlementResource;
   public requestLogs: RequestLogResource;
   public webhooks: WebhookResource;
-  
-  // Additional resources (to be uncommented when created)
-  // public processes: ProcessResource;
-  // public components: ComponentResource;
+  public eventLogs: EventLogResource;
+  public analytics: AnalyticsResource;
+  public metrics: MetricsResource;
 
   constructor(private client: KeygenClient) {
     this.licenses = new LicenseResource(client);
@@ -38,10 +36,9 @@ export class KeygenApi {
     this.entitlements = new EntitlementResource(client);
     this.requestLogs = new RequestLogResource(client);
     this.webhooks = new WebhookResource(client);
-    
-    // Initialize additional resources
-    // this.processes = new ProcessResource(client);
-    // this.components = new ComponentResource(client);
+    this.eventLogs = new EventLogResource(client);
+    this.analytics = new AnalyticsResource(client);
+    this.metrics = new MetricsResource(client);
   }
 
   /**
@@ -115,3 +112,6 @@ export { GroupResource } from './resources/groups';
 export { EntitlementResource } from './resources/entitlements';
 export { RequestLogResource } from './resources/request-logs';
 export { WebhookResource } from './resources/webhooks';
+export { EventLogResource } from './resources/event-logs';
+export { AnalyticsResource } from './resources/analytics';
+export { MetricsResource } from './resources/metrics';

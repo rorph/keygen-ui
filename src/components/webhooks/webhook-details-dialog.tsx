@@ -11,6 +11,7 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { Webhook as WebhookIcon, Calendar, Info, Activity, TestTube, Copy } from 'lucide-react'
 import { toast } from 'sonner'
 import { handleLoadError, handleCrudError } from '@/lib/utils/error-handling'
+import { copyToClipboard } from '@/lib/utils/clipboard'
 
 interface WebhookDetailsDialogProps {
   webhook: Webhook
@@ -62,14 +63,12 @@ export function WebhookDetailsDialog({
   }
 
   const handleCopyEndpoint = () => {
-    navigator.clipboard.writeText(webhook.attributes.url)
-    toast.success('Endpoint URL copied to clipboard')
+    copyToClipboard(webhook.attributes.url, 'Endpoint URL')
   }
 
   const handleCopySigningKey = () => {
     if (webhook.attributes.signingKey) {
-      navigator.clipboard.writeText(webhook.attributes.signingKey)
-      toast.success('Signing key copied to clipboard')
+      copyToClipboard(webhook.attributes.signingKey, 'Signing key')
     }
   }
 

@@ -1,5 +1,50 @@
 import { KeygenClient } from '../client';
-import { Policy, KeygenResponse, ListOptions, KeygenListResponse } from '../../types/keygen';
+import { Policy, Entitlement, KeygenResponse, PaginationOptions, KeygenListResponse } from '../../types/keygen';
+
+export interface PolicyAttributes {
+  name?: string;
+  duration?: number;
+  scheme?: string;
+  strict?: boolean;
+  floating?: boolean;
+  protected?: boolean;
+  usePool?: boolean;
+  maxMachines?: number | null;
+  maxProcesses?: number | null;
+  maxCores?: number | null;
+  maxUses?: number | null;
+  maxUsers?: number | null;
+  maxMemory?: number | null;
+  maxDisk?: number | null;
+  requireProductScope?: boolean;
+  requirePolicyScope?: boolean;
+  requireMachineScope?: boolean;
+  requireFingerprintScope?: boolean;
+  requireUserScope?: boolean;
+  requireChecksumScope?: boolean;
+  requireVersionScope?: boolean;
+  requireCheckIn?: boolean;
+  checkInInterval?: string;
+  checkInIntervalCount?: number;
+  requireHeartbeat?: boolean;
+  heartbeatDuration?: number;
+  heartbeatCullStrategy?: string;
+  heartbeatResurrectionStrategy?: string;
+  heartbeatBasis?: string;
+  machineUniquenessStrategy?: string;
+  machineMatchingStrategy?: string;
+  componentUniquenessStrategy?: string;
+  componentMatchingStrategy?: string;
+  expirationStrategy?: string;
+  expirationBasis?: string;
+  renewalBasis?: string;
+  transferStrategy?: string;
+  authenticationStrategy?: string;
+  machineLeasingStrategy?: string;
+  processLeasingStrategy?: string;
+  overageStrategy?: string;
+  metadata?: Record<string, unknown>;
+}
 
 export class PolicyResource {
   constructor(private client: KeygenClient) {}
@@ -7,56 +52,30 @@ export class PolicyResource {
   /**
    * List all policies
    */
-  async list(options?: ListOptions): Promise<KeygenListResponse<Policy>> {
-    const queryParams = new URLSearchParams();
-    
-    if (options?.limit) queryParams.set('limit', options.limit.toString());
-    if (options?.page) queryParams.set('page', options.page.toString());
-    
-    const query = queryParams.toString();
-    const endpoint = query ? `/policies?${query}` : '/policies';
-    
-    return this.client.request<Policy[]>(endpoint);
+  async list(options?: PaginationOptions): Promise<KeygenListResponse<Policy>> {
+    const params: Record<string, unknown> = {
+      ...this.client.buildPaginationParams(options || {}),
+    };
+
+    return this.client.request<Policy[]>('policies', { params });
   }
 
   /**
    * Get a specific policy by ID
    */
   async get(policyId: string): Promise<KeygenResponse<Policy>> {
-    return this.client.request<Policy>(`/policies/${policyId}`);
+    return this.client.request<Policy>(`policies/${policyId}`);
   }
 
   /**
    * Create a new policy
    */
-  async create(data: {
-    name: string;
+  async create(data: PolicyAttributes & {
     productId: string;
-    duration?: number;
-    strict?: boolean;
-    floating?: boolean;
-    concurrent?: boolean;
-    protected?: boolean;
-    requireHeartbeat?: boolean;
-    heartbeatDuration?: number;
-    heartbeatCullStrategy?: 'DEACTIVATE_DEAD' | 'KEEP_DEAD';
-    heartbeatResurrectionStrategy?: 'NO_REVIVE' | 'ALWAYS_REVIVE';
-    heartbeatBasis?: 'FROM_CREATION' | 'FROM_FIRST_PING';
-    machineUniquenessStrategy?: 'UNIQUE_PER_LICENSE' | 'UNIQUE_PER_ACCOUNT';
-    machineMatchingStrategy?: 'MATCH_ANY' | 'MATCH_TWO' | 'MATCH_MOST' | 'MATCH_ALL';
-    expirationStrategy?: 'RESTRICT_ACCESS' | 'REVOKE_ACCESS' | 'MAINTAIN_ACCESS';
-    expirationBasis?: 'FROM_CREATION' | 'FROM_FIRST_VALIDATION' | 'FROM_FIRST_ACTIVATION' | 'FROM_FIRST_DOWNLOAD' | 'FROM_FIRST_USE';
-    renewalBasis?: 'FROM_EXPIRY' | 'FROM_NOW';
-    transferStrategy?: 'RESET_EXPIRY' | 'KEEP_EXPIRY';
-    authenticationStrategy?: 'TOKEN' | 'LICENSE' | 'MIXED' | 'NONE';
-    machineLeasingStrategy?: 'PER_LICENSE' | 'PER_USER' | 'ALWAYS_ALLOW';
-    processLeasingStrategy?: 'PER_MACHINE' | 'PER_LICENSE' | 'PER_USER' | 'ALWAYS_ALLOW';
-    overageStrategy?: 'NO_OVERAGE' | 'ALWAYS_ALLOW_OVERAGE' | 'ALLOW_1_25X_OVERAGE' | 'ALLOW_1_5X_OVERAGE' | 'ALLOW_2X_OVERAGE';
-    metadata?: Record<string, unknown>;
   }): Promise<KeygenResponse<Policy>> {
     const { productId, ...attributes } = data;
-    
-    return this.client.request<Policy>('/policies', {
+
+    return this.client.request<Policy>('policies', {
       method: 'POST',
       body: {
         data: {
@@ -78,31 +97,8 @@ export class PolicyResource {
   /**
    * Update a policy
    */
-  async update(policyId: string, data: {
-    name?: string;
-    duration?: number;
-    strict?: boolean;
-    floating?: boolean;
-    concurrent?: boolean;
-    protected?: boolean;
-    requireHeartbeat?: boolean;
-    heartbeatDuration?: number;
-    heartbeatCullStrategy?: 'DEACTIVATE_DEAD' | 'KEEP_DEAD';
-    heartbeatResurrectionStrategy?: 'NO_REVIVE' | 'ALWAYS_REVIVE';
-    heartbeatBasis?: 'FROM_CREATION' | 'FROM_FIRST_PING';
-    machineUniquenessStrategy?: 'UNIQUE_PER_LICENSE' | 'UNIQUE_PER_ACCOUNT';
-    machineMatchingStrategy?: 'MATCH_ANY' | 'MATCH_TWO' | 'MATCH_MOST' | 'MATCH_ALL';
-    expirationStrategy?: 'RESTRICT_ACCESS' | 'REVOKE_ACCESS' | 'MAINTAIN_ACCESS';
-    expirationBasis?: 'FROM_CREATION' | 'FROM_FIRST_VALIDATION' | 'FROM_FIRST_ACTIVATION' | 'FROM_FIRST_DOWNLOAD' | 'FROM_FIRST_USE';
-    renewalBasis?: 'FROM_EXPIRY' | 'FROM_NOW';
-    transferStrategy?: 'RESET_EXPIRY' | 'KEEP_EXPIRY';
-    authenticationStrategy?: 'TOKEN' | 'LICENSE' | 'MIXED' | 'NONE';
-    machineLeasingStrategy?: 'PER_LICENSE' | 'PER_USER' | 'ALWAYS_ALLOW';
-    processLeasingStrategy?: 'PER_MACHINE' | 'PER_LICENSE' | 'PER_USER' | 'ALWAYS_ALLOW';
-    overageStrategy?: 'NO_OVERAGE' | 'ALWAYS_ALLOW_OVERAGE' | 'ALLOW_1_25X_OVERAGE' | 'ALLOW_1_5X_OVERAGE' | 'ALLOW_2X_OVERAGE';
-    metadata?: Record<string, unknown>;
-  }): Promise<KeygenResponse<Policy>> {
-    return this.client.request<Policy>(`/policies/${policyId}`, {
+  async update(policyId: string, data: PolicyAttributes): Promise<KeygenResponse<Policy>> {
+    return this.client.request<Policy>(`policies/${policyId}`, {
       method: 'PATCH',
       body: {
         data: {
@@ -118,8 +114,44 @@ export class PolicyResource {
    * Delete a policy
    */
   async delete(policyId: string): Promise<void> {
-    await this.client.request<void>(`/policies/${policyId}`, {
+    await this.client.request<void>(`policies/${policyId}`, {
       method: 'DELETE'
+    });
+  }
+
+  /**
+   * Get policy entitlements
+   */
+  async getEntitlements(policyId: string, options: PaginationOptions = {}): Promise<KeygenResponse<Entitlement[]>> {
+    const params: Record<string, unknown> = {
+      ...this.client.buildPaginationParams(options),
+    };
+    return this.client.request<Entitlement[]>(`policies/${policyId}/entitlements`, { params });
+  }
+
+  /**
+   * Attach entitlements to policy
+   */
+  async attachEntitlements(policyId: string, entitlementIds: string[]): Promise<void> {
+    const body = {
+      data: entitlementIds.map(id => ({ type: 'entitlements', id })),
+    };
+    await this.client.request(`policies/${policyId}/entitlements`, {
+      method: 'POST',
+      body,
+    });
+  }
+
+  /**
+   * Detach entitlements from policy
+   */
+  async detachEntitlements(policyId: string, entitlementIds: string[]): Promise<void> {
+    const body = {
+      data: entitlementIds.map(id => ({ type: 'entitlements', id })),
+    };
+    await this.client.request(`policies/${policyId}/entitlements`, {
+      method: 'DELETE',
+      body,
     });
   }
 }

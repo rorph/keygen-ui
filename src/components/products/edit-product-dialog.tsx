@@ -21,7 +21,8 @@ import {
 } from '@/components/ui/select'
 import { Textarea } from '@/components/ui/textarea'
 import { Checkbox } from '@/components/ui/checkbox'
-import { Package } from 'lucide-react'
+import { Badge } from '@/components/ui/badge'
+import { Package, X } from 'lucide-react'
 import { getKeygenApi } from '@/lib/api'
 import { toast } from 'sonner'
 import { Product } from '@/lib/types/keygen'
@@ -36,7 +37,7 @@ interface EditProductDialogProps {
 
 const PLATFORM_OPTIONS = [
   'Windows',
-  'macOS', 
+  'macOS',
   'Linux',
   'iOS',
   'Android',
@@ -45,19 +46,21 @@ const PLATFORM_OPTIONS = [
   'Cloud'
 ]
 
-export function EditProductDialog({ 
-  product, 
-  open, 
-  onOpenChange, 
-  onProductUpdated 
+export function EditProductDialog({
+  product,
+  open,
+  onOpenChange,
+  onProductUpdated
 }: EditProductDialogProps) {
   const [loading, setLoading] = useState(false)
+  const [permissionInput, setPermissionInput] = useState('')
   const [formData, setFormData] = useState({
     name: '',
     code: '',
     url: '',
     distributionStrategy: 'LICENSED' as 'LICENSED' | 'OPEN' | 'CLOSED',
     platforms: [] as string[],
+    permissions: [] as string[],
     metadata: ''
   })
 
@@ -72,14 +75,16 @@ export function EditProductDialog({
         url: product.attributes.url || '',
         distributionStrategy: product.attributes.distributionStrategy || 'LICENSED',
         platforms: product.attributes.platforms || [],
+        permissions: product.attributes.permissions || [],
         metadata: product.attributes.metadata ? JSON.stringify(product.attributes.metadata, null, 2) : ''
       })
+      setPermissionInput('')
     }
   }, [product])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    
+
     if (!product) return
 
     if (!formData.name.trim()) {
@@ -89,7 +94,7 @@ export function EditProductDialog({
 
     try {
       setLoading(true)
-      
+
       let metadata: Record<string, unknown> | undefined
       if (formData.metadata.trim()) {
         try {
@@ -106,6 +111,7 @@ export function EditProductDialog({
         ...(formData.code.trim() && { code: formData.code.trim() }),
         ...(formData.url.trim() && { url: formData.url.trim() }),
         ...(formData.platforms.length > 0 && { platforms: formData.platforms }),
+        permissions: formData.permissions.length > 0 ? formData.permissions : [],
         ...(metadata && { metadata })
       }
 
@@ -135,6 +141,31 @@ export function EditProductDialog({
     }
   }
 
+  const addPermission = () => {
+    const permission = permissionInput.trim()
+    if (permission && !formData.permissions.includes(permission)) {
+      setFormData(prev => ({
+        ...prev,
+        permissions: [...prev.permissions, permission]
+      }))
+      setPermissionInput('')
+    }
+  }
+
+  const removePermission = (permission: string) => {
+    setFormData(prev => ({
+      ...prev,
+      permissions: prev.permissions.filter(p => p !== permission)
+    }))
+  }
+
+  const handlePermissionKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      e.preventDefault()
+      addPermission()
+    }
+  }
+
   const generateCode = () => {
     if (formData.name) {
       const code = formData.name
@@ -157,7 +188,7 @@ export function EditProductDialog({
             Update the product information and settings.
           </DialogDescription>
         </DialogHeader>
-        
+
         <form onSubmit={handleSubmit} className="space-y-6">
           {/* Basic Information */}
           <div className="space-y-4">
@@ -165,7 +196,7 @@ export function EditProductDialog({
               <Package className="h-4 w-4" />
               Basic Information
             </h4>
-            
+
             <div className="grid grid-cols-1 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="edit-name">Product Name *</Label>
@@ -177,7 +208,7 @@ export function EditProductDialog({
                   required
                 />
               </div>
-              
+
               <div className="space-y-2">
                 <Label htmlFor="edit-code">Product Code</Label>
                 <div className="flex gap-2">
@@ -201,7 +232,7 @@ export function EditProductDialog({
                   Unique identifier for your product
                 </p>
               </div>
-              
+
               <div className="space-y-2">
                 <Label htmlFor="edit-url">Product URL</Label>
                 <Input
@@ -272,11 +303,11 @@ export function EditProductDialog({
                   <Checkbox
                     id={`edit-platform-${platform}`}
                     checked={formData.platforms.includes(platform)}
-                    onCheckedChange={(checked) => 
+                    onCheckedChange={(checked) =>
                       handlePlatformToggle(platform, checked as boolean)
                     }
                   />
-                  <Label 
+                  <Label
                     htmlFor={`edit-platform-${platform}`}
                     className="text-sm font-normal"
                   >
@@ -290,6 +321,45 @@ export function EditProductDialog({
             </p>
           </div>
 
+          {/* Permissions */}
+          <div className="space-y-4">
+            <h4 className="text-sm font-medium">Permissions</h4>
+            <div className="space-y-2">
+              <Label htmlFor="edit-permissions">Add Permission</Label>
+              <div className="flex gap-2">
+                <Input
+                  id="edit-permissions"
+                  placeholder="e.g., license.read"
+                  value={permissionInput}
+                  onChange={(e) => setPermissionInput(e.target.value)}
+                  onKeyPress={handlePermissionKeyPress}
+                />
+                <Button type="button" variant="outline" onClick={addPermission} disabled={!permissionInput.trim()}>
+                  Add
+                </Button>
+              </div>
+              {formData.permissions.length > 0 && (
+                <div className="flex flex-wrap gap-2 mt-2">
+                  {formData.permissions.map((permission) => (
+                    <Badge key={permission} variant="outline" className="flex items-center gap-1 bg-purple-50 text-purple-700 border-purple-200">
+                      {permission}
+                      <button
+                        type="button"
+                        onClick={() => removePermission(permission)}
+                        className="ml-1 hover:bg-purple-200 rounded-full p-0.5"
+                      >
+                        <X className="h-3 w-3" />
+                      </button>
+                    </Badge>
+                  ))}
+                </div>
+              )}
+              <p className="text-xs text-muted-foreground">
+                Add permission strings one at a time, or press Enter to add
+              </p>
+            </div>
+          </div>
+
           {/* Metadata */}
           <div className="space-y-4">
             <h4 className="text-sm font-medium">Metadata (Optional)</h4>
@@ -297,7 +367,7 @@ export function EditProductDialog({
               <Label htmlFor="edit-metadata">Custom Metadata (JSON)</Label>
               <Textarea
                 id="edit-metadata"
-                placeholder='{&quot;version&quot;: &quot;1.0.0&quot;, &quot;category&quot;: &quot;productivity&quot;}'
+                placeholder={'{"version": "1.0.0", "category": "productivity"}'}
                 value={formData.metadata}
                 onChange={(e) => setFormData({ ...formData, metadata: e.target.value })}
                 rows={3}
@@ -309,9 +379,9 @@ export function EditProductDialog({
           </div>
 
           <DialogFooter>
-            <Button 
-              type="button" 
-              variant="outline" 
+            <Button
+              type="button"
+              variant="outline"
               onClick={() => onOpenChange(false)}
             >
               Cancel

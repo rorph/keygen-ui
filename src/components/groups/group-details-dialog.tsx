@@ -10,6 +10,7 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { Users, KeyRound, Calendar, Info } from 'lucide-react'
 // toast not needed; using centralized error handlers
 import { handleLoadError } from '@/lib/utils/error-handling'
+import { MetadataViewer } from '@/components/shared/metadata-viewer'
 
 interface GroupDetailsDialogProps {
   group: Group
@@ -247,6 +248,8 @@ export function GroupDetailsDialog({
               )}
             </CardContent>
           </Card>
+
+          <MetadataViewer metadata={group.attributes.metadata} />
         </div>
       </DialogContent>
     </Dialog>

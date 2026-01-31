@@ -17,7 +17,13 @@ export class LicenseResource {
     if (filters.policy) params.policy = filters.policy;
     if (filters.group) params.group = filters.group;
     if (filters.product) params.product = filters.product;
+    if (filters.machine) params.machine = filters.machine;
     if (filters.status) params.status = filters.status;
+    if (filters.metadata) {
+      for (const [key, value] of Object.entries(filters.metadata)) {
+        params[`metadata[${key}]`] = value;
+      }
+    }
 
     return this.client.request<License[]>('licenses', { params });
   }

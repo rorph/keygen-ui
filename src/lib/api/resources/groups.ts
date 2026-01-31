@@ -1,7 +1,7 @@
 import { KeygenClient } from '../client';
-import { Group, KeygenResponse, ListOptions, KeygenListResponse } from '../../types/keygen';
+import { Group, KeygenResponse, PaginationOptions, KeygenListResponse } from '../../types/keygen';
 
-export interface GroupFilters extends ListOptions {
+export interface GroupFilters extends PaginationOptions {
   name?: string;
   maxLicenses?: number;
   maxMachines?: number;
@@ -15,12 +15,10 @@ export class GroupResource {
    * List all groups
    */
   async list(filters: GroupFilters = {}): Promise<KeygenListResponse<Group>> {
-    const params: Record<string, unknown> = {};
-    
-    // Add pagination
-    if (filters.limit) params.limit = filters.limit;
-    if (filters.page) params.page = filters.page;
-    
+    const params: Record<string, unknown> = {
+      ...this.client.buildPaginationParams(filters),
+    };
+
     // Add filter parameters
     if (filters.name) params.name = filters.name;
     if (filters.maxLicenses) params.maxLicenses = filters.maxLicenses;
@@ -45,6 +43,7 @@ export class GroupResource {
     maxLicenses?: number;
     maxMachines?: number;
     maxUsers?: number;
+    metadata?: Record<string, unknown>;
   }): Promise<KeygenResponse<Group>> {
     const body = {
       data: {
@@ -54,6 +53,7 @@ export class GroupResource {
           ...(groupData.maxLicenses && { maxLicenses: groupData.maxLicenses }),
           ...(groupData.maxMachines && { maxMachines: groupData.maxMachines }),
           ...(groupData.maxUsers && { maxUsers: groupData.maxUsers }),
+          ...(groupData.metadata && { metadata: groupData.metadata }),
         },
       },
     };
@@ -72,6 +72,7 @@ export class GroupResource {
     maxLicenses?: number;
     maxMachines?: number;
     maxUsers?: number;
+    metadata?: Record<string, unknown>;
   }): Promise<KeygenResponse<Group>> {
     const body = {
       data: {
@@ -82,6 +83,7 @@ export class GroupResource {
           ...(updates.maxLicenses !== undefined && { maxLicenses: updates.maxLicenses }),
           ...(updates.maxMachines !== undefined && { maxMachines: updates.maxMachines }),
           ...(updates.maxUsers !== undefined && { maxUsers: updates.maxUsers }),
+          ...(updates.metadata !== undefined && { metadata: updates.metadata }),
         },
       },
     };
@@ -104,10 +106,10 @@ export class GroupResource {
   /**
    * Get group licenses
    */
-  async getLicenses(id: string, options: ListOptions = {}): Promise<KeygenResponse<unknown[]>> {
-    const params: Record<string, unknown> = {};
-    if (options.limit) params.limit = options.limit;
-    if (options.page) params.page = options.page;
+  async getLicenses(id: string, options: PaginationOptions = {}): Promise<KeygenResponse<unknown[]>> {
+    const params: Record<string, unknown> = {
+      ...this.client.buildPaginationParams(options),
+    };
 
     return this.client.request(`groups/${id}/licenses`, { params });
   }
@@ -115,10 +117,10 @@ export class GroupResource {
   /**
    * Get group users
    */
-  async getUsers(id: string, options: ListOptions = {}): Promise<KeygenResponse<unknown[]>> {
-    const params: Record<string, unknown> = {};
-    if (options.limit) params.limit = options.limit;
-    if (options.page) params.page = options.page;
+  async getUsers(id: string, options: PaginationOptions = {}): Promise<KeygenResponse<unknown[]>> {
+    const params: Record<string, unknown> = {
+      ...this.client.buildPaginationParams(options),
+    };
 
     return this.client.request(`groups/${id}/users`, { params });
   }

@@ -69,3 +69,4 @@ next-env.d.ts
 *.log
 tmp/
 temp/
+.pnpm-store/

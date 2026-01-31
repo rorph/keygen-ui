@@ -9,12 +9,24 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { toast } from 'sonner'
+import { MetadataEditor } from '@/components/shared/metadata-editor'
 
 interface EditGroupDialogProps {
   group: Group
   open: boolean
   onOpenChange: (open: boolean) => void
   onGroupUpdated: () => void
+}
+
+/**
+ * Convert API metadata (Record<string, unknown>) to editor format (Record<string, string>).
+ * Non-string values are JSON-stringified so they round-trip safely.
+ */
+function metadataToStrings(metadata?: Record<string, unknown> | null): Record<string, string> {
+  if (!metadata) return {}
+  return Object.fromEntries(
+    Object.entries(metadata).map(([k, v]) => [k, typeof v === 'string' ? v : JSON.stringify(v)])
+  )
 }
 
 export function EditGroupDialog({
@@ -28,7 +40,8 @@ export function EditGroupDialog({
     name: '',
     maxLicenses: '',
     maxMachines: '',
-    maxUsers: ''
+    maxUsers: '',
+    metadata: {} as Record<string, string>
   })
 
   const api = getKeygenApi()
@@ -40,41 +53,46 @@ export function EditGroupDialog({
         name: group.attributes.name,
         maxLicenses: group.attributes.maxLicenses?.toString() || '',
         maxMachines: group.attributes.maxMachines?.toString() || '',
-        maxUsers: group.attributes.maxUsers?.toString() || ''
+        maxUsers: group.attributes.maxUsers?.toString() || '',
+        metadata: metadataToStrings(group.attributes.metadata)
       })
     }
   }, [group])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    
+
     if (!formData.name.trim()) {
       toast.error('Group name is required')
       return
     }
 
     setLoading(true)
-    
+
     try {
       const updates: {
         name: string;
         maxLicenses?: number;
         maxMachines?: number;
         maxUsers?: number;
+        metadata?: Record<string, unknown>;
       } = {
         name: formData.name.trim()
       }
 
       // Add optional limits - use undefined for unlimited (empty string)
-      updates.maxLicenses = formData.maxLicenses && parseInt(formData.maxLicenses) > 0 
-        ? parseInt(formData.maxLicenses) 
+      updates.maxLicenses = formData.maxLicenses && parseInt(formData.maxLicenses) > 0
+        ? parseInt(formData.maxLicenses)
         : undefined
-      updates.maxMachines = formData.maxMachines && parseInt(formData.maxMachines) > 0 
-        ? parseInt(formData.maxMachines) 
+      updates.maxMachines = formData.maxMachines && parseInt(formData.maxMachines) > 0
+        ? parseInt(formData.maxMachines)
         : undefined
-      updates.maxUsers = formData.maxUsers && parseInt(formData.maxUsers) > 0 
-        ? parseInt(formData.maxUsers) 
+      updates.maxUsers = formData.maxUsers && parseInt(formData.maxUsers) > 0
+        ? parseInt(formData.maxUsers)
         : undefined
+
+      // Always send metadata so cleared keys are actually removed
+      updates.metadata = formData.metadata
 
       await api.groups.update(group.id, updates)
       onGroupUpdated()
@@ -96,7 +114,7 @@ export function EditGroupDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-md max-h-[90vh] overflow-y-auto">
         <form onSubmit={handleSubmit}>
           <DialogHeader>
             <DialogTitle>Edit Group</DialogTitle>
@@ -104,7 +122,7 @@ export function EditGroupDialog({
               Update the group configuration and limits.
             </DialogDescription>
           </DialogHeader>
-          
+
           <div className="grid gap-4 py-4">
             <div className="grid gap-2">
               <Label htmlFor="name">Group Name *</Label>
@@ -156,6 +174,12 @@ export function EditGroupDialog({
                 disabled={loading}
               />
             </div>
+
+            <MetadataEditor
+              value={formData.metadata}
+              onChange={(metadata) => setFormData(prev => ({ ...prev, metadata }))}
+              disabled={loading}
+            />
           </div>
 
           <DialogFooter>
